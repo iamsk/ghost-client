@@ -1,15 +1,14 @@
-import os
 import mimetypes
-
-import six
-import requests
-import jwt	# pip install pyjwt
 import os
 from datetime import datetime as date
 
-from .models import Controller, PostController
-from .helpers import refresh_session_if_necessary
+import jwt
+import requests
+import six
+
 from .errors import GhostException
+from .helpers import refresh_session_if_necessary
+from .models import Controller, PostController
 
 
 class Ghost(object):
@@ -186,7 +185,6 @@ class Ghost(object):
 
         return self._version
 
-
     def refresh_session(self):
         """
         Re-authenticate using the refresh token if available.
@@ -220,23 +218,10 @@ class Ghost(object):
 
         # Create the token (including decoding secret)
         token = jwt.encode(payload, bytes.fromhex(secret), algorithm='HS256', headers=header)
-        #print(token)
 
-        if os.name == 'nt':
-            # Windows version
-            token_str = token
-        else:
-            # Linux version
-            # print('Ghost {}'.format(token.decode("utf-8")))
-            token_str = token.decode("utf-8")
+        self._access_token = token
 
-
-        self._access_token = token_str
-
-        return token_str
-
-
-
+        return token
 
     def upload(self, file_obj=None, file_path=None, name=None, data=None):
         """
@@ -317,8 +302,6 @@ class Ghost(object):
 
         response = requests.get(url, headers=headers)
 
-        # print(response.content)
-
         if response.status_code // 100 != 2:
             raise GhostException(response.status_code, response.json().get('errors', []))
 
@@ -372,18 +355,13 @@ class Ghost(object):
 
         headers = kwargs.pop('headers', dict())
 
-        #if 'json' in kwargs:
         headers['Accept'] = 'application/json'
         headers['Content-Type'] = 'application/json'
 
         if self._access_token:
             headers['Authorization'] = 'Ghost %s' % self._access_token
 
-        #print(url)
-
         response = request(url, headers=headers, **kwargs)
-
-        #print(response.content)
 
         if response.status_code // 100 != 2:
             raise GhostException(response.status_code, response.json().get('errors', []))
